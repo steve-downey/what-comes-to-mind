@@ -1,3 +1,5 @@
+#+BLOG: sdowney
+#+POSTID: 159
 #+DATE: [2016-10-28 Fri 18:32]
 #+AUTHOR: Steve Downey
 #+TITLE: C++ code in Org-mode
@@ -123,3 +125,9 @@ And now get the output by running the program.
 Which prints out our hello, world text. Which is has version number to convince myself it gets updated.
 #+RESULTS: run-hello
 : Hello World++! 2.9
+
+* Raw Document
+
+Org mode in org is a little tricky, since to show the examples, you have to quote them.
+
+Original document is available on [[https://github.com/steve-downey/what-comes-to-mind/blob/master/c%2B%2B-org-mode.org][GitHub]]
