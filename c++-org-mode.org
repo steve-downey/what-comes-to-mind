@@ -1,0 +1,125 @@
+#+DATE: [2016-10-28 Fri 18:32]
+#+AUTHOR: Steve Downey
+#+TITLE: C++ code in Org-mode
+#+email: sdowney@gmail.com
+#+BABEL: :results output graphics :tangle yes
+
+#+OPTIONS: ':nil *:t -:t ::t <:t H:3 \n:nil ^:t arch:headline author:t c:nil
+#+OPTIONS: creator:comment d:(not "LOGBOOK") date:t e:t email:nil f:t inline:t
+#+OPTIONS: num:t p:nil pri:nil stat:t tags:t tasks:t tex:t timestamp:t toc:nil
+#+OPTIONS: todo:t |:t
+#+CREATOR: Emacs 24.5.1 (Org mode 8.2.10)
+#+DESCRIPTION:
+#+EXCLUDE_TAGS: noexport
+#+KEYWORDS:
+#+LANGUAGE: en
+#+SELECT_TAGS: export
+
+* C++
+This is a simple example with one c++ file, all in one src code block.
+
+#+HEADERS: :tangle hello.c++ :exports code :eval never
+#+BEGIN_SRC C++
+#include <iostream>
+
+int main()
+{
+    std::cout << "Hello World++! 2.9";
+}
+
+#+END_SRC
+
+
+The src block looks like:
+#+BEGIN_EXAMPLE org
+    ,#+HEADERS: :tangle hello.c++ :exports code :eval never
+    ,#+BEGIN_SRC C++
+    // source code
+    ,#+END_SRC
+#+END_EXAMPLE
+
+The HEADERS block is on a separate line because when the buffer is evaluated, code will get run, and the SRC blocks will get rewritten, as well as the RESULTS blocks. Since we want the headers to be preserved, we can't make them part of the SRC block.
+
+You can also tangle a Makefile.
+
+#+HEADERS: :tangle Makefile :exports code :eval never
+#+BEGIN_SRC makefile
+clean:
+	-rm hello
+
+hello:	hello.c++
+	clang++ hello.c++ -o hello
+
+#+END_SRC
+
+With the org mode headers exporting the code, and not evaluating this block. Just like the C++ code. We'll evaluate the makefile, and run the program, a bit further down.
+
+#+BEGIN_EXAMPLE org
+    ,#+HEADERS: :tangle Makefile :exports code :eval never
+    ,#+BEGIN_SRC makefile
+    # Makefile
+    ,#+END_SRC
+#+END_EXAMPLE
+
+Now, we tangle the code out to the files.
+
+#+BEGIN_EXAMPLE org
+    ,#+NAME: tangle-buffer
+    ,#+HEADERS: :exports both :results value
+    ,#+BEGIN_SRC emacs-lisp
+    (org-babel-tangle)
+    ,#+END_SRC
+#+END_EXAMPLE
+
+#+NAME: tangle-buffer
+#+HEADERS: :exports both :results value
+#+BEGIN_SRC emacs-lisp
+(org-babel-tangle)
+#+END_SRC
+
+That will write out two files when the buffer is evaluated using org-babel-execute-buffer, bound to \C-c \C-v b.
+
+Give this block a name, so that where the results go can be controlled. Do that by giving the RESULTS block the name of the SRC block. Org will then produce a table of the results of executing the elisp, which is the two files produced.
+
+And put the results here:
+#+RESULTS: tangle-buffer
+| hello.c++ | Makefile |
+
+
+Next, we run make with the target to compile the code. You could also simply write the compiler command here.
+#+BEGIN_EXAMPLE org
+    ,#+NAME: make-clean-hello
+    ,#+BEGIN_SRC sh :exports both :results output
+    make clean
+    make hello
+    ,#+END_SRC
+#+END_EXAMPLE
+
+#+NAME: make-clean-hello
+#+BEGIN_SRC sh :exports both :results output
+make clean
+make hello
+#+END_SRC
+
+And make will run our compilation as spec'd in the Makefile we just tangled out.
+#+RESULTS: make-clean-hello
+: rm hello
+: clang++ hello.c++ -o hello
+
+
+And now get the output by running the program.
+#+BEGIN_EXAMPLE org
+    ,#+NAME: run-hello
+    ,#+BEGIN_SRC sh :exports results
+    ./hello
+    ,#+END_SRC
+#+END_EXAMPLE
+
+#+NAME: run-hello
+#+BEGIN_SRC sh :exports results
+./hello
+#+END_SRC
+
+Which prints out our hello, world text. Which is has version number to convince myself it gets updated.
+#+RESULTS: run-hello
+: Hello World++! 2.9
