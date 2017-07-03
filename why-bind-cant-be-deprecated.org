@@ -1,0 +1,212 @@
+#+BLOG: sdowney
+#+POSTID: 187
+#+OPTIONS: ':nil *:t -:t ::t <:t H:3 \n:nil ^:nil arch:headline author:t
+#+OPTIONS: broken-links:nil c:nil creator:nil d:(not "LOGBOOK") date:t e:t
+#+OPTIONS: email:nil f:t inline:t num:nil p:nil pri:nil prop:nil stat:t tags:t
+#+OPTIONS: tasks:t tex:t timestamp:t title:t toc:nil todo:t |:t
+#+TITLE: Why std::bind can't be (formally) deprecated
+#+DATE: <2017-06-28 Wed>
+#+AUTHOR: Steve Downey
+#+EMAIL: sdowney@sdowney.org
+#+LANGUAGE: en
+#+SELECT_TAGS: export
+#+EXCLUDE_TAGS: noexport
+#+CREATOR: Emacs 25.2.1 (Org mode 9.0.6)
+#+OPTIONS: html-link-use-abs-url:nil html-postamble:auto html-preamble:t
+#+OPTIONS: html-scripts:t html-style:t html5-fancy:nil tex:t
+#+HTML_DOCTYPE: xhtml-strict
+#+HTML_CONTAINER: div
+#+DESCRIPTION:
+#+KEYWORDS:
+#+HTML_LINK_HOME:
+#+HTML_LINK_UP:
+#+HTML_MATHJAX:
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="https://raw.githubusercontent.com/steve-downey/css/master/smd-zenburn.css" />
+#+HTML_HEAD_EXTRA:
+#+SUBTITLE:
+#+INFOJS_OPT:
+#+CREATOR: <a href="http://www.gnu.org/software/emacs/">Emacs</a> 25.2.1 (<a href="http://orgmode.org">Org</a> mode 9.0.6)
+#+LATEX_HEADER:
+#+BABEL: :results output graphics :tangle yes
+
+
+* Yes: std::bind should be replaced by lambda
+
+For almost all cases, ~std::bind~ should be replaced by a lambda expression. It's idiomatic, and results in better code. There is almost no reason post C++11 to use ~std::bind~.
+
+Doing so is quite straightforward, capture each bind argument by value in the lambda capture list, and provide auto parameters for each of the placeholders, then call the bound callable using ~std::invoke()~. That will handle the cases of member function pointers, as well as regular functions. Now, this is how to do it mechanically, if you were doing this as part of a manual refactoring, the lambda can be made even clearer.
+
+#+HEADERS: :tangle example1.cpp :exports code :eval never
+#+BEGIN_SRC c++
+#include <functional>
+#include <iostream>
+
+void f(int n1, int n2, int n3) {
+  std::cout << n1 << ' ' << n2 << ' ' << n3 << '\n';
+}
+
+int main() {
+  using namespace std::placeholders;
+  int n = 5;
+  auto f1 = std::bind(f, 2, n, _1);
+  f1(10); // calls f(2, 5, 10);
+
+  auto l1 = [ p1 = 2, p2 = n ](auto _1) { return std::invoke(f, p1, p2, _1); };
+  l1(10);
+
+  // idiomatically
+  auto l1a = [=](auto _1){return f(2, n, _1);};
+  l1a(10);
+
+  auto f2 = std::bind(f, 2, std::cref(n), _1);
+  auto l2 = [ p1 = 2, p2 = std::cref(n) ](auto _1) {
+      return std::invoke(f, p1, p2, _1);
+  };
+  // or
+  auto l2a = [ p1 = 2, &p2 = n ](auto _1) {
+      return std::invoke(f, p1, p2, _1);
+  };
+  // more idiomatically
+  auto l2b = [&](auto _1){f(2, n, _1);};
+
+  n = 7;
+  f2(10); // calls f(2, 7, 10);
+
+  l2(10);
+  l2a(10);
+  l2b(10);
+}
+#+END_SRC
+
+
+Which results in:
+#+RESULTS: run-example1
+: 2 5 10
+: 2 5 10
+: 2 5 10
+: 2 7 10
+: 2 7 10
+: 2 7 10
+: 2 7 10
+
+
+* No: std::bind provides one thing lambda doesn't
+
+The expression ~std::bind~ evaluates flattens ~std::bind~ sub-expressions, and passes the same placeholder parameters down. A nested bind is evaluated with the given parameters, and the result is passed in to the outer bind. So you can have a bind that does something like ~g( _1, f(_1))~, and when you call it with a parameter, that same value will be passed to both g and f. The function g will receive ~f(_1)~ as its second parameter.
+
+Now, you could rewrite the whole thing as a lambda, but ~auto~ potentially makes this a little more difficult. The result of ~std::bind~ is an unutterable type. They weren't supposed to be naked. However, ~auto~ means the expression could be broken down into parts, meaning that the translation from a ~std::bind~ expression to a lambda expression is potentially not mechanical. Or, the bind could be part of a template, where the subexpression is a template parameter, which is likely working by accident, rather than design.
+
+In any case, ~std::bind~ does not treat its arguments uniformly. It treats a bind expression distinctly differently. At the time, it made some sense. But it makes reasoning about bind expressions difficult.
+
+Don't do this. But it is why formally deprecating ~std::bind~ is difficult. They can be replaced, but not purely mechanically.
+
+There isn't a simple translation that works, unlike converting from ~std::auto_ptr~ to ~std::unique_ptr~, or putting a space after a string where it now looks like a conversion. And, ~std::bind~ isn't broken. It's sub-optimal because of the complicated machinery to support all of the flexibility, where a lambda allows the compiler to do much better. Also, since the type isn't utterable, it often ends up in a std::function, which erases the type, removing optimization options.
+
+* Example of fail code
+
+#+HEADERS: :tangle example2.cpp :exports code :eval never
+#+BEGIN_SRC C++
+#include <functional>
+#include <iostream>
+
+void f(int n1, int n2, int n3)
+{
+    std::cout << n1 << ' ' << n2 << ' ' << n3 << '\n';
+}
+
+int g(int n1) { return n1; }
+
+int main()
+{
+    using namespace std::placeholders;
+
+    auto g1 = std::bind(g, _1);
+    auto f2 = std::bind(f, _1, g1, 4);
+    f2(10); // calls f(10, g(10), 4);
+
+    // THIS DOES NOT WORK
+    // auto l2 = [p1 = g1, p2 = 4](auto _1) {std::invoke(f, _1, p1, p2);};
+    // l2(10);
+
+    // The bind translation needs to be composed:
+    auto l1 = [](auto _1){return g(_1);};
+    auto l2 = [p1 = l1, p2 = 4](auto _1){f(_1, p1(_1), p2); };
+    // idiomatically
+    auto l2a = [](auto _1) { return f(_1, g(_1), 4);};
+    l2(10);
+    l2a(10);
+}
+
+
+#+END_SRC
+
+#+RESULTS: run-example2
+: 10 10 4
+: 10 10 4
+: 10 10 4
+
+
+
+* TODO
+If someone can figure out a fixit recommendation that could be safely applied, transforming the old bind to a lambda, then ~std::bind~ could be deprecated in C++Next, and removed as soon as C++(Next++). But that right now is non-trivial in some cases.
+
+
+* Updates:
+- Fix incorrect statement about type-erasure in std::bind. I was thinking std::function
+- Add more idiomatic transliterations of the std::bind lambdas
+
+* Building and running the examples
+
+#+NAME: tangle-buffer
+#+HEADERS: :exports none :results none
+#+BEGIN_SRC emacs-lisp
+(org-babel-tangle)
+#+END_SRC
+
+** Makefile
+#+HEADERS: :tangle Makefile :exports code :eval never
+#+BEGIN_SRC makefile
+clean:
+	-rm example1
+	-rm example2
+
+example1: example1.cpp
+	clang++ --std=c++1z example1.cpp -o example1
+
+example2: example2.cpp
+	clang++ --std=c++1z example2.cpp -o example2
+
+example3: example3.cpp
+	clang++ --std=c++1z example3.cpp -o example3 2>&1
+
+all: example1 example2
+
+#+END_SRC
+
+
+** Build
+#+NAME: make-clean
+#+BEGIN_SRC shell :exports results :results output
+make clean
+make all
+#+END_SRC
+
+
+#+RESULTS: make-clean
+: rm example1
+: rm example2
+: Makefile:2: recipe for target 'clean' failed
+: clang++ --std=c++1z example1.cpp -o example1
+: clang++ --std=c++1z example2.cpp -o example2
+
+#+NAME: run-example1
+#+BEGIN_SRC shell :exports results :results output
+./example1
+#+END_SRC
+
+#+NAME: run-example2
+#+BEGIN_SRC shell :exports results :results output
+./example2
+#+END_SRC
+
+#+RESULTS: run-example2
