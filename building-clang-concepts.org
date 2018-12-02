@@ -1,0 +1,93 @@
+#+BLOG: sdowney
+#+POSTID: 220
+#+OPTIONS: ':nil *:t -:t ::t <:t H:3 \n:nil ^:t arch:headline author:t
+#+OPTIONS: broken-links:nil c:nil creator:nil d:(not "LOGBOOK") date:t e:t
+#+OPTIONS: email:nil f:t inline:t num:nil p:nil pri:nil prop:nil stat:t tags:t
+#+OPTIONS: tasks:t tex:t timestamp:t title:t toc:nil todo:t |:t
+#+TITLE: Building Saar Raz's clang concepts branch
+#+DATE: <2018-12-02 Sun>
+#+AUTHOR: Steve Downey
+#+EMAIL: sdowney@sdowney.org
+#+LANGUAGE: en
+#+SELECT_TAGS: export
+#+EXCLUDE_TAGS: noexport
+#+CREATOR: Emacs 26.1 (Org mode 9.1.13)
+#+OPTIONS: html-link-use-abs-url:nil html-postamble:auto html-preamble:t
+#+OPTIONS: html-scripts:t html-style:t html5-fancy:nil tex:t
+#+HTML_DOCTYPE: xhtml-strict
+#+HTML_CONTAINER: div
+#+DESCRIPTION:
+#+KEYWORDS:
+#+HTML_LINK_HOME:
+#+HTML_LINK_UP:
+#+HTML_MATHJAX:
+#+HTML_HEAD: <link href="http://sdowney.org/css/smd-zenburn.css" rel="stylesheet"></link>
+#+HTML_HEAD_EXTRA:
+#+SUBTITLE:
+#+INFOJS_OPT:
+#+CREATOR: <a href="https://www.gnu.org/software/emacs/">Emacs</a> 26.1 (<a href="https://orgmode.org">Org</a> mode 9.1.13)
+#+LATEX_HEADER:
+#+LATEX_CLASS: article
+#+LATEX_CLASS_OPTIONS:
+#+LATEX_HEADER:
+#+LATEX_HEADER_EXTRA:
+#+DESCRIPTION:
+#+KEYWORDS:
+#+SUBTITLE:
+#+LATEX_COMPILER: pdflatex
+#+DATE: \today
+#+STARTUP: showall
+
+* A Recipe for building Saar Raz's clang concepts branch
+
+Saar Raz has been working on a Concepts implementation, available at [[https://github.com/saarraz/clang-concepts]]
+It's not much harder to build it than clang usually is, it's just a matter of getting things checked out into the right places before configuring the build. Just like LLVM and clang normally.
+
+In order to double check how, I peeked at the shell script used by the compiler explorer image to build the clang-concepts compiler: [[https://github.com/mattgodbolt/compiler-explorer-image/blob/master/clang/build/build-concepts.sh]]
+
+The really important bit is getting exactly the right commit from LLVM, 893a41656b527af1b00a1f9e5c8fcecfff62e4b6.
+
+To get a working directory something like:
+Starting from where you want your working tree and build tree, e.g ~/bld/llvm-concepts
+
+#+BEGIN_SRC shell
+git clone https://github.com/llvm-mirror/llvm.git
+
+pushd llvm
+git reset --hard 893a41656b527af1b00a1f9e5c8fcecfff62e4b6
+popd
+
+pushd llvm/tools
+git clone https://github.com/saarraz/clang-concepts.git clang
+popd
+
+pushd llvm/projects
+git clone https://github.com/llvm-mirror/libcxx.git
+git clone https://github.com/llvm-mirror/libcxxabi.git
+# The sanitizers: this is optional but you want them
+git clone https://github.com/llvm-mirror/compiler-rt.git
+popd
+
+#+END_SRC
+
+Then to build and install
+#+BEGIN_SRC shell
+mkdir build && cd build
+
+cmake \
+    -DCMAKE_INSTALL_PREFIX=~/install/llvm-concepts/ \
+    -DLLVM_ENABLE_LIBCXX=yes  \
+    -DCMAKE_BUILD_TYPE=Release  \
+    -DLLVM_ENABLE_ASSERTIONS=yes \
+    -DLLVM_PARALLEL_LINK_JOBS=1 \
+    -G Ninja  \
+    ../llvm/
+
+ninja
+
+ninja check
+
+ninja install
+#+END_SRC
+
+Note that I install into a separate prefix, keeping it isolated from everything else. The compiler can be invoked as ~/install/llvm-concepts/bin/clang++. There's no particular reason to put the compiler on your PATH.
