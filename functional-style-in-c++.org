@@ -1,0 +1,345 @@
+#+options: ':nil *:t -:t ::t <:t H:3 \n:nil ^:t arch:headline author:t
+#+options: broken-links:nil c:nil creator:nil d:(not "LOGBOOK") date:t e:t
+#+options: email:nil f:t inline:t num:t p:nil pri:nil prop:nil stat:t tags:t
+#+options: tasks:t tex:t timestamp:t title:t toc:t todo:t |:t
+#+title: Using the Standard C++ Library in a Functional style
+#+date: <2019-06-18 Tue>
+#+author: Steve Downey
+#+email: sdowney@sdowney.org
+#+language: en
+#+select_tags: export
+#+exclude_tags: noexport
+#+creator: Emacs 26.1.91 (Org mode 9.2.4)
+#+options: html-link-use-abs-url:nil html-postamble:auto html-preamble:t
+#+options: html-scripts:t html-style:t html5-fancy:nil tex:t
+#+html_doctype: xhtml-strict
+#+html_container: div
+#+description:
+#+keywords:
+#+html_link_home:
+#+html_link_up:
+#+html_mathjax:
+#+html_head: <link rel="stylesheet" type="text/css" href="http://sdowney.org/css/smd-zenburn.css" />
+#+html_head_extra:
+#+subtitle:
+#+infojs_opt:
+#+creator: <a href="https://www.gnu.org/software/emacs/">Emacs</a> 26.1.91 (<a href="https://orgmode.org">Org</a> mode 9.2.4)
+#+latex_header:
+
+* Using the Standard C++ Library in a Functional style.
+
+The standard C++ library offers a number of algorithms that have nearly exact
+analogues in functional languages, and are used in almost the same way. In
+particular std::accumulate and std::transform are powerful, and very general,
+algorithms. In functional programming literature, accumulate is usually
+referred to as fold, or foldl, and transform is known as map, or zipWith,
+depending on whether transform is the unary or binary function form.
+
+To quickly review, accumulate takes an iterator range, and either sums the
+range, or applies a functor to each value together with the result of the last
+application of the functor. This can be thought of as putting the operation
+between each pair of elements in the range. When the operation is plus or
+times, the result is the sum or product of all of the elements in the
+list. This is useful, but not really exciting to most programmers. However,
+when you consider carefully what can be used as the functor argument, you
+realize that fold is a an extremely powerful algorithm.
+
+A quick example:
+
+#+begin_src c++
+std::list& cons(std::list& xs, int x) {
+    xs.push_back(x);
+    return xs;
+}
+
+int init[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+vector v(init, init + 10);
+
+std::list empty;
+std::list v2 = std::accumulate(v.begin(), v.end(), empty, cons);
+
+#+end_src
+
+#+begin_src haskell
+> foldr (:) [] [1..10]
+#+end_src
+
+(Note, the lines of code starting with > are Haskell equivalents to the C++
+code, and SHOULD work at a ghci Prelude> prompt. Since that's where I'm cutting
+and pasting from. Although it's sort of like literate haskell, the whole
+article probably won't compile since early definitions may conflict with later
+ones.)
+
+Cons is a list constructor function. It pushes its argument onto the end of the
+linked list, and then returns a reference to the list that the element was
+appended to. The fact that this function takes and returns a reference to a
+list is a compromise I've made between the C++ library and functional
+purity. Really, I should be taking and returning lists by value. Except that
+the overhead is unconscionable, turning an O(n) operation into an O(n\^2)
+operation. Since there is no way of accessing the intermediate state, in this
+case, I'm safe, but you need to be careful in this analysis. Using cons() in
+your own code will modify the value, and you lose the referential transparency
+we're trying to maintain.
+
+So the application of cons() using accumulate against an empty list copies the
+list into a new list. If we had supplied a non-empty list, we would have
+appended the lists together. Interesting, for an algorithm that's usually
+considered a purely numerical one.
+
+Functional languages usually work with singly linked lists. A singly linked
+list has an append at the head only, and therefore the tail remains unchanged,
+and any references to the tail can not tell that there is a new list that uses
+it. In fact, a list might be the tail of several other lists, and there is no
+way of telling the difference. It would be possible to create a version of list
+that is singly linked, where cons returned by value, and in that case, two
+lists could share a tail, but have distinct heads. So long as the list held
+only immutable values (and properly, all values are immutable), you would be
+completely safe.
+
+Transform, or map, as it's know in FP circles, is another fundamental
+algorithm. Transform takes an iterator range and applies a functor to each
+element in the range and copies the result into a destination output iterator,
+or, in its second form, takes two ranges and a binary operator, and outputs the
+result of pair -wise evaluation of the elements in each range, through the
+output iterator.
+
+
+#+begin_src c++
+int func(int x) { return x * x + x + 1; }
+// ...
+std::transform(v.begin(), v.end(), v2.begin(), func);
+#+end_src
+
+#+begin_src haskell
+> let func x = x*x + x + 1
+> map func [1 .. 10]
+#+end_src
+
+* Functions and function objects as first-class entities
+
+As you can see, the core STL algorithms are fairly weak by themselves.  That
+is, they don't really do anything by themselves. What they do is capture
+conventional patterns of function applications to collections.  The real power
+is in the functions themselves. However, C++ functions are fairly
+limited. Let's say you wanted to write a function that added a constant K to
+its argument. One way is to write int adder(int x, int K); Unfortunately, it's
+rather difficult to apply this function with the same constant to every element
+in a collection.
+
+{Actually, in a few moments we'll see how we can do exactly that almost
+trivially, but let's hold on to that thought.}
+
+Function objects, aka functors in the OO community (the name means something
+_entirely_ different in functional programming) , give us a way of extending
+what functions can do by letting us associate some additional information with
+the function call. We do this by creating an object with an operator()()
+method. That lets the object be used where a function is called for, and also
+to supply the additional information as part of the object the operator is part
+of.
+
+#+begin_src c++
+class adder {
+  int K;
+
+public:
+  adder(int k)
+      : K(k)
+
+  {}
+
+  int operator()(int i) const
+
+  {
+    return K + i;
+  }
+};
+#+end_src
+
+Then we can do something like:
+
+#+begin_src c++
+std::transform(v.begin(), v.end(), v3.begin(), adder(5));
+#+end_src
+
+#+begin_src haskell
+> let adder x = (x +)
+> let adder5 = adder 5
+> map adder5 [1 .. 10]
+#+end_src
+
+But, as you can see, that's a lot of work for a small function that
+we're probably only going to use in one place.
+
+Still, it's nice to see that we now have an entity that can be used just
+like a function, but is also a first class entity in the C++ language.
+
+* Lambda abstraction and Partial Application
+
+So, how can the adder example be made more convenient. Something that
+you might actually use?
+
+How about
+
+#+begin_src c++
+std::transform(v.begin(), v.end(), v4.begin(), _1 + 5);
+#+end_src
+
+#+begin_src haskell
+> map (x -> x + 5) [1 .. 10]
+> -- or, even cooler
+> map ( + 5) [1 .. 10]
+#+end_src
+
+This is using the Boost Lambda library to constructed a function object
+in place. One that takes a single parameter, and returns that plus 5.
+That _1 is what as known as a placeholder. Its type is
+boost::lambda::placeholder1_type. (And, yes, the leading underscore
+followed by a number is a perfectly legal variable name.) The functor
+acts in this context as though it has an operator() with a signature
+like int operator()(int arg1), and when transform applies it, the output
+is the same as our earlier example using adder. Except we didn't have
+create a class just for this single use.
+
+The reason I say that it acts as though it has that signature in this
+context, is that the actual signature is much more complicated,
+involving quite a bit of template metaprogramming in order to deduce the
+correct signature given the actual types of the arguments. If, v, for
+example, was a vector of doubles, the lambda expression would need to
+calculate that the return type is also a double, since the type of
+(double + int) is double. And for non-builtin types, it can be much more
+complicated, particularly if the lambda expression has more than one
+free variable.
+
+For example:
+
+#+begin_src c++
+k = (_1 * _2)(i,j);
+#+end_src
+
+#+begin_src haskell
+> let k = x y -> x * y
+#+end_src
+
+That lambda expression can be applied to any pair of arguments that has
+an operator*() defined for it, and then as long as k has an assignment
+operator that can accept the result of that operator*(), everything will
+just work. However, that flexibility comes with a cost. The actual type
+of (_1 *_2) is insanely complicated. With the version of boost that I
+have, with gcc 4.0.2, the type is:
+
+Not a variable or member you would like to declare. Fortunately, it works
+together with boost::function. You can assign that functor to a boost::function
+for later use. e.g.
+
+#+begin_src c++
+boost::function<int(int,int)> a = (_1 * _2);
+boost::function<double(double,double)> b = (_1 * _2);
+#+end_src
+
+#+begin_src c++
+const boost::lambda::lambda_functor<boost::lambda::lambda_functor_base<boost::lambda::arithmetic_action,
+boost::tuples::tuple<boost::lambda::lambda_functor<boost::lambda::placeholder<1>
+>, boost::lambda::lambda_functor<boost::lambda::placeholder<2> >,
+boost::tuples::null_type, boost::tuples::null_type,
+boost::tuples::null_type, boost::tuples::null_type,
+boost::tuples::null_type, boost::tuples::null_type,
+boost::tuples::null_type, boost::tuples::null_type> >
+>
+#+end_src
+
+This is also one of the powerful aspects of ML and Haskell, and most modern
+functional languages. They are strictly typed, but the types can be inferred by
+the compiler. So the programmer is, for the most part, freed from having to
+annotate the types of everything. But the compiler will still give you an error
+if you say something that is really impossible. You get most of the benefits of
+duck-typing, without having to worry that there is some case that you haven't
+covered in tests that will result in 'Does Not Understand'.
+
+The boost::lambda library even supports currying, although with a syntax that
+is a little hard to work with:
+
+#+begin_src c++
+boost::function<int(int)> c = bind(protect(_1 * _2), i, _1);
+#+end_src
+
+The protect call protects the evaluation of the lambda expression from the bind
+operation. The bind operation attaches an argument to an expression to be used
+when the expression is evaluated later. In this case, one of the arguments is a
+lambda placeholder, so that the result is equivalent to the lambda expression
+(i * _1).
+
+The documentation for boost::lambda is quite good, and is worth extensive
+study. So I won't repeat it. Instead, let's focus on ways of using it that you
+might not have thought of otherwise.
+
+* Pipes and Filters Architecture
+
+Pipes and Filters is one of the fundamental architectural patterns identified
+by Mary Shaw. On a Unix command line, this is expressed with | (pipe), <
+(redirect stdin), > (redirect stdout), and tools like tee and xargs. In a
+functional programing system, piping the output of one function to the input of
+another is via function composition, that is with functions f and g, you
+compute f(g(x)). This is also sometimes written as f . g. read as f compose g.
+
+Doing this can also be very useful in complex template programs, where the
+intermediate type is not known, or difficult to express, but when passed
+directly to another templated function, the compiler computes the type for us.
+
+The goal here is to take a sequence of functions, compose the entire sequence,
+and then apply that composed function to a sequence of values.  Where we end up
+is
+
+#+begin_src c++
+std::transform(v.begin(), v.end(), std::ostream_iterator(std::cout, "t"),
+               foldl1(fns.begin(), fns.end(), composer()));
+#+end_src
+
+
+The interesting part is the final stanza. What are foldl1 and composer?  Lets
+work our way outward. The composer is a functor that takes two boost::functions
+and returns a boost::function that composes them. It assumes that each of the
+functions has the same signature, which in this case is reasonable, since
+they've come out of a single sequence. It binds together the two functions and
+a lambda placeholder, then converts that to a new boost::function.
+
+#+begin_src c++
+class composer {
+public:
+  template boost::function operator()(boost::function f, boost::function g) {
+    using boost::lambda::_1;
+    return bind(f, bind(g, _1));
+  }
+};
+#+end_src
+
+
+Constructing a version of composer that takes functions with different
+signatures and generates the correct return type is a little more
+complicated. Take a look at the example code. The trick is to use a nested
+struct that does the type computation based on the template arguments of the
+member function. A conventional template metaprogramming approach, but quite
+strange the first time you come across it.
+
+The next part is the function foldl1. The unusual name is borrowed from
+Haskell. Once you've learned C++, Java, and Ruby, Haskell is the next language
+you should learn. Foldl1 is an abbreviation for fold left with one
+argument. It's very similar to std::accumulate, with one key
+difference. Instead of starting with a base value, the first value in the
+sequence is used. This means that it can not be applied to an empty list, but
+it does avoid having to come up with an identity value, such as 0 for addition,
+or 1 for multiplication. We could use the function identity(x){return x;}, but
+that's an extra function call we don't need, and an extra argument to
+constructing the composed function. And, not all sets have an identity.
+
+#+begin_src c++
+template <typename BinOp, typename Iter::value_type>
+foldl1(Iter first, Iter last, BinOp oper) {
+  typename Iter::value_type n = *first++;
+  return std::accumulate(first, last, n, oper);
+}
+#+end_src
+
+So, assuming that fns is, say, a std::vector<boost::function<int(int)>>, then
+it's just a matter of pushing the elements of the sequence v through the
+composed function, and streaming them out through the
+ostream_iterator.
