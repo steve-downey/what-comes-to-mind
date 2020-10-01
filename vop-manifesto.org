@@ -1,0 +1,66 @@
+#+options: ':nil *:t -:t ::t <:t H:3 \n:nil ^:nil arch:headline author:t
+#+options: broken-links:nil c:nil creator:nil d:(not "LOGBOOK") date:t e:t
+#+options: email:nil f:t inline:t num:nil p:nil pri:nil prop:nil stat:t tags:t
+#+options: tasks:t tex:t timestamp:t title:t toc:nil todo:t |:t
+#+title: Value Oriented Programming: A Manifesto
+#+date:<2020-09-30 Wed>
+#+author: Steve Downey
+#+email: sdowney@sdowney.org
+#+language: en
+#+select_tags: export
+#+exclude_tags: noexport
+#+creator: Emacs 26.1.91 (Org mode 9.2.4)
+#+options: html-link-use-abs-url:nil html-postamble:nil html-preamble:t
+#+options: html-scripts:t html-style:t html5-fancy:nil tex:t
+#+html_doctype: xhtml-strict
+#+html_container: div
+#+description:
+#+keywords:
+#+html_link_home:
+#+html_link_up:
+#+html_mathjax:
+#+html_head: <link rel="stylesheet" type="text/css" href="http://sdowney.org/css/smd-zenburn.css" />
+#+html_head_extra:
+#+subtitle:
+#+infojs_opt:
+#+creator: <a href="https://www.gnu.org/software/emacs/">Emacs</a> 26.1.91 (<a href="https://orgmode.org">Org</a> mode 9.2.4)
+#+latex_header:
+#+BABEL: :results output graphics :tangle yes
+
+
+* Object Oriented Programming
+  The primitive entities are objects which have certain properties
+ - Objects have Identity
+ - Objects have State
+ - Objects have Behavior
+
+* Values are not Objects
+  The primitive entities are values which have none of the properties of Objects
+  - Values have no identity
+  - Values have no State
+  - Values have no Behavior
+
+* A positive definition of VOP
+  - Values are Equivalent
+  - Values are Immutable
+  - Values are Side-effect Free
+
+
+* Values are Equivalent
+  One entity with a value will give the same results as a different entity with the same value. All 'fives' are the same. This allows equational reasoning. If `a` and `b` have the same value, `f(a)` and `f(b)` have the same value.
+
+* Values are Immutable
+  'five' never becomes 'six'. Values do not change.
+
+* Values are Side-effect free
+  No operation on a value has an effect on other values. Temporal changes are explicit.
+
+* Value Oriented Programming does not deny Objects
+  - There are things with identity
+  - There are things that vary over time
+  - There are things that affect the state of other things
+
+* Values are are a better basis
+  We can, and do, build objects out of values, but objects in the OO sense are impossible to reason about.
+
+  Values are.
