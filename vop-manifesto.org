@@ -27,40 +27,46 @@
 #+latex_header:
 #+BABEL: :results output graphics :tangle yes
 
+Value Oriented Programming produces systems that are easier to correctly reason about than Object Oriented Programming does. We have no accepted sound theory of OOP, despite decades of use in the field and attempts at systemetization. Value Oriented Programming allows straightforward equational reasoning and makes explicit the implicit connections where OOP hides bugs.
+
+VOP has roots in functional programming, and supports that style, but is not limited to functional languages. It is not necessary to adopt functions as first class entities in order to use VOP.
+
+Treating functions as values, and using higher order functions, functions that return functions as values, can be useful, but is not essential to VOP.
+
 
 * Object Oriented Programming
   The primitive entities are objects which have certain properties
  - Objects have Identity
- - Objects have State
  - Objects have Behavior
+ - Objects have State
 
 * Values are not Objects
   The primitive entities are values which have none of the properties of Objects
   - Values have no identity
-  - Values have no State
   - Values have no Behavior
+  - Values have no State
 
 * A positive definition of VOP
   - Values are Equivalent
+  - Values are Inactive
   - Values are Immutable
-  - Values are Side-effect Free
-
 
 * Values are Equivalent
   One entity with a value will give the same results as a different entity with the same value. All 'fives' are the same. This allows equational reasoning. If `a` and `b` have the same value, `f(a)` and `f(b)` have the same value.
 
-* Values are Immutable
-  'five' never becomes 'six'. Values do not change.
+* Values are Inactive
+  Values do not do things. No operation on a value has an effect on other values. Temporal changes are explicit.
 
-* Values are Side-effect free
-  No operation on a value has an effect on other values. Temporal changes are explicit.
+* Values are Immutable
+  Values do not become. 'five' never becomes 'six'. Values do not change. A variable may be assigned a new, different, value.
 
 * Value Oriented Programming does not deny Objects
   - There are things with identity
   - There are things that vary over time
   - There are things that affect the state of other things
 
-* Values are are a better basis
-  We can, and do, build objects out of values, but objects in the OO sense are impossible to reason about.
+  These can be modeled as values over time, or by allowing assignment of values to variables. Implicit state and implicit behavior are sources of bugs. Identity means that the state of an object can not be reasoned about, it is dependent on the history of the system. Entity ~a~ and ~b~ might be equivalent now, but may become inequivalent for no local reason.
 
-  Values are.
+
+* Values are are a better basis
+  Values can be reasoned about locally. There are no 'hidden variables' or connections. If ~a~ and ~b~ are equivalent, the the operation `f` on each produces the same value. ~f(a) == f(b)~
