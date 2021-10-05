@@ -4,7 +4,7 @@
 #+options: broken-links:nil c:nil creator:nil d:(not "LOGBOOK") date:t e:t
 #+options: email:nil f:t inline:t num:nil p:nil pri:nil prop:nil stat:t tags:t
 #+options: tasks:t tex:t timestamp:t title:t toc:nil todo:t |:t
-#+title: std::execution, Sender/Reciever, and the Continuation Monad
+#+title: std::execution, Sender/Receiver, and the Continuation Monad
 #+date:<2021-10-03 Sun>
 #+author: Steve Downey
 #+email: sdowney@sdowney.org
@@ -28,7 +28,7 @@
 #+latex_header:
 #+BABEL: :results output graphics :tangle yes
 
-Some thoughts on the [[https://wg21.link/p2300][std::execution]] proposal and the my understanding of the underlying theory.
+Some thoughts on the [[https://wg21.link/p2300][std::execution]] proposal and my understanding of the underlying theory.
 
 * What's proposed
   From the paper's [[https://brycelelbach.github.io/wg21_p2300_std_execution/std_execution.html#intro][Introduction]]
@@ -38,15 +38,15 @@ Some thoughts on the [[https://wg21.link/p2300][std::execution]] proposal and th
 
   Which doesn't tell you much.
 
-  It proposes a framework with the principle abstractions are Senders, Schedulers, and Receivers.
+  It proposes a framework where the principle abstractions are Senders, Schedulers, and Receivers.
   - Sender :: A composable unit of work.
-  - Reciever :: Delimits work, handling completion, exceptions, or cancellation.
+  - Receiver :: Delimits work, handling completion, exceptions, or cancellation.
   - Schedulers :: Arranges for the context work is done in.
 
 
-  The primary using facing concept is the sender. Values and functions can be lifted directly into senders. Senders can be stacked together, with a sender passing its value on to another function. Or stacking exception or cancellation handling the same way.
+  The primary user facing concept is the sender. Values and functions can be lifted directly into senders. Senders can be stacked together, with a sender passing its value on to another function. Or stacking exception or cancellation handling the same way.
 
-  Receivers handle the three ways a sender can complete, by returning a value, throwing an exception, or being canceled. As described, receivers are most likely to be implemented within particular algorithms that combine senders, such as [[https://brycelelbach.github.io/wg21_p2300_std_execution/std_execution.html#example-then[]`then`]] or [[https://brycelelbach.github.io/wg21_p2300_std_execution/std_execution.html#example-retry][`retry`]].
+  Receivers handle the three ways a sender can complete, by returning a value, throwing an exception, or being canceled. As described, receivers are most likely to be implemented within particular algorithms that combine senders, such as [[https://brycelelbach.github.io/wg21_p2300_std_execution/std_execution.html#example-then][`then`]] or [[https://brycelelbach.github.io/wg21_p2300_std_execution/std_execution.html#example-retry][`retry`]].
 
   Schedulers provide access to execution contexts. Like inline, single thread, a thread pool, a GPU, and so on, would all have schedulers that provide for putting a sender into the context they manage.
 
@@ -113,3 +113,7 @@ Some thoughts on the [[https://wg21.link/p2300][std::execution]] proposal and th
   This is *all* my personal opinion, based on my own understanding. I've been in the meetings, I've been in discussions, asked questions. But if I'm wrong about some aspect of the proposal, that's on me. Certainly not a formal opinion of Bloomberg, where I work. While we do lots of network services, and async programming, this isn't what our tech looks like at all. Getting from here to there is an open question, but it would be for ASIO, too.
 
   At least it isn't CORBA.
+
+
+
+[[https://github.com/steve-downey/what-comes-to-mind/blob/master/send-rec.org][Source For Blog]]
