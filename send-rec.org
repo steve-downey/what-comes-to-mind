@@ -1,3 +1,5 @@
+#+BLOG: sdowney
+#+POSTID: 303
 #+options: ':nil *:t -:t ::t <:t H:3 \n:nil ^:nil arch:headline author:t
 #+options: broken-links:nil c:nil creator:nil d:(not "LOGBOOK") date:t e:t
 #+options: email:nil f:t inline:t num:nil p:nil pri:nil prop:nil stat:t tags:t
@@ -88,9 +90,9 @@ Some thoughts on the [[https://wg21.link/p2300][std::execution]] proposal and th
 
   Although senders form a logical graph of units of work, the physical type model is containment, much like expression templates. The result of binding senders together via an algorithm is a sender that contains the bound together senders. There are no nodes or allocations inherent to the model, just function calls.
 
-  C++ coroutines fit into this model. C++ coroutines are, from the outeside, functions with rules about the interaction patterns with the returned value. Making a coroutine owning type a sender, and a sender co_awaitable, is posible and has been demonstrated.
+  C++ coroutines fit into this model. C++ coroutines are, from the outside, functions with rules about the interaction patterns with the returned value. Making a coroutine owning type a sender, and a sender co_awaitable, is possible and has been demonstrated.
 
-  std::execution takes the Continuation Modad and fits it to C++ control flow, return or exception, and adds cancellation, which incidentally allows a channel for failures from execution contexts. The thread pool can potentially signal failure via the error channel, without aliasing problems from application function code. However, for advanced users, these can be folded back into the normal function arguments and handled by application code. Policy decisions are not burned into the ROM of std::execution, but there are defaults that can be provided by application infrastructure authors.
+  std::execution takes the Continuation Monad and fits it to C++ control flow, return or exception, and adds cancellation, which incidentally allows a channel for failures from execution contexts. The thread pool can potentially signal failure via the error channel, without aliasing problems from application function code. However, for advanced users, these can be folded back into the normal function arguments and handled by application code. Policy decisions are not burned into the ROM of std::execution, but there are defaults that can be provided by application infrastructure authors.
 
   Those infrastructure authors do not have to be std library vendors. The protocols, rendered as concepts, are available to normal users.
 
@@ -98,13 +100,13 @@ Some thoughts on the [[https://wg21.link/p2300][std::execution]] proposal and th
 
   - _Eppur si muove_ :: And yet it moves
 
-  I do not believe ASIO's model is a firm foundation for all async programming. Howewver, it is well proven, and exists. It works.
+  I do not believe ASIO's model is a firm foundation for all async programming. However, it is well proven, and exists. It works.
 
 
 * And ...
   I have confidence that a networking library can and will be built using p2300. I am less confident that can be done in the timeframe for C++26. I do not believe for a moment we could have one for C++23, even with an existence proof a networking library appearing now. It's simply too late to review and agree. We're in the same place as coroutines. We can have the machinery, but without all of the application user facing infrastructure we should have.
 
-  I think this was the right choice with coroutines, and I think providing the machinery for general continuation based async in the standard library so that we can build on top of it is the right choice. The authors have commited to making sure all the facilities are available for programmers, in particular the pipe syntax (an issue for ranges) as well as providing bases or adapters for coroutine promises and typed senders. We can experiment and add existing practice as we go.
+  I think this was the right choice with coroutines, and I think providing the machinery for general continuation based async in the standard library so that we can build on top of it is the right choice. The authors have committed to making sure all the facilities are available for programmers, in particular the pipe syntax (an issue for ranges) as well as providing bases or adapters for coroutine promises and typed senders. We can experiment and add existing practice as we go.
 
 
 * Disclaimer
