@@ -80,7 +80,7 @@ Some thoughts on the [[https://wg21.link/p2300][std::execution]] proposal and my
 
   Which is why having a sound theory for std::execution is a good thing, even if the theory is unfamiliar.
 
-  But as a group, we learned the wrong lessons from the 80s and though it was researchers jobs to take the successes of practitioners and put a sound basis to them. Ignoring that it is a feedback loop. In the 60s and 70s, those researchers were also the practitioners. It's not wrong to get out ahead of theory, but we do need to check back.
+  But as a group, we learned the wrong lessons from the 80s and thought it was a researcher's job to take the successes of practitioners and put a sound basis to them. Ignoring that it is a feedback loop. In the 60s and 70s, those researchers were also the practitioners. It's not wrong to get out ahead of theory, but we do need to check back.
 
 * p2300 std::execution
 
