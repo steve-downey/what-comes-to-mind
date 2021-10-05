@@ -38,7 +38,7 @@ Some thoughts on the [[https://wg21.link/p2300][std::execution]] proposal and my
 
   Which doesn't tell you much.
 
-  It proposes a framework where the principle abstractions are Senders, Schedulers, and Receivers.
+  It proposes a framework where the principle abstractions are Senders, Receivers, and Schedulers.
   - Sender :: A composable unit of work.
   - Receiver :: Delimits work, handling completion, exceptions, or cancellation.
   - Schedulers :: Arranges for the context work is done in.
